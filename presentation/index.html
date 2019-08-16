@@ -38,7 +38,7 @@
           border-radius: 5px;
         }
         .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
-        .remark-code-line-highlighted     { background-color: #373832; }
+        .remark-code-line-highlighted     { background-color: #e6007e; }
         .pull-left {
           float: left;
           width: 47%;
@@ -261,13 +261,144 @@ Create a port-forward from our local machine to the created pod
 Forwarding from 127.0.0.1:8081 -> 3000
 Forwarding from [::1]:8081 -> 3000
 ```
-
+<br />
 .pink[Open a new terminal]
 ```bash
 ➜ curl localhost:8081
 Hello World!%          
 ```
+<br /><br/>
+.large[Congratulations!]   
+You are running your first application on Kubernetes.
+---
+class: center, middle, inverse
+# But what have you done?
+---
+First app architecture
+![First app architecture](img/first-app-architecture.png)
+---
+List all the pods in your cluster
+```bash
+➜ kubectl get pods
+NAME                         READY   STATUS    RESTARTS   AGE
+nodehelloworld.example.com   1/1     Running   0          23m
+```
 
+Describe our created pod
+```bash
+➜ kubectl describe pod nodehelloworld.example.com
+Name:         nodehelloworld.example.com
+Namespace:    default
+Node:         minikube/10.0.2.15
+Start Time:   Fri, 16 Aug 2019 09:46:00 +0200
+Labels:       app=helloworld
+Status:       Running
+IP:           172.17.0.4
+Containers:
+  k8s-demo:
+    Container ID:   docker://<ID>
+    Image:          wardviaene/k8s-demo
+*   Port:           3000/TCP
+    Host Port:      0/TCP
+    Ready:          True 
+```
+
+The port-forward makes the exposed port of the pod accessible.
+---
+### Defining a pod
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+* name: nodehelloworld.example.com
+  labels:
+    app: helloworld
+spec:
+  containers:
+  - name: k8s-demo
+    image: wardviaene/k8s-demo
+    ports:
+    - name: nodejs-port
+*     containerPort: 3000
+```
+---
+class: center, middle, inverse
+# Different ways to expose pods
+---
+layout: false
+
+Kubernetes has the concept of .pink[**services**]
+
+A service create an endpoint for your pod(s) 
+
+Four different types:
+
+- .pink[ClusterIP]: Exposes the service on a cluster-internal IP. Makes it only reachable from within the cluster .small[(default)]
+
+- .pink[NodePort]: Exposes the service on each node's IP at a static port
+
+- .pink[LoadBalancer]: LoadBalancer created by the cloud provider that will route external traffice to every node on the NodePort
+
+- .pink[ExternalName]: Creates a CNAME record. This helpful for service discovery, but requires additional add-on
+---
+## Creating a service for our application
+
+We are going to create a NodePort service. So we can reach the application via a static port of our Kubernetes cluster IP
+
+The definition is:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld-service
+spec:
+  ports:
+  - port: 31001
+*   nodePort: 31001
+*   targetPort: nodejs-port
+    protocol: TCP
+  selector:
+    app: helloworld
+  type: NodePort
+
+```
+
+Let's create the service:
+
+```bash
+➜ kubectl create -f hello-world/hello-world-service.yml
+service/helloworld-service created
+```
+---
+To list all services:
+
+```bash
+➜ kubectl get services
+  NAME                 TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)           AGE
+* helloworld-service   NodePort    10.99.41.16   <none>        31001:31001/TCP   5m29s
+  kubernetes           ClusterIP   10.96.0.1     <none>        443/TCP           20h
+```
+
+Get the url of the service
+
+```bash
+➜ minikube service helloworld-service --url            
+http://192.168.99.100:31001
+
+➜ curl http://192.168.99.100:31001
+Hello World!%     
+```
+
+**NOTE** This is the IP if the kubernetes cluster.
+```bash
+➜ minikube status
+  host: Running
+  kubelet: Running
+  apiserver: Running
+* kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
+```
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">
     </script>
