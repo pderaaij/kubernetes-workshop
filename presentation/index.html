@@ -328,11 +328,16 @@ class: center, middle, inverse
 ---
 layout: false
 
+## The concept of services
+
 Kubernetes has the concept of .pink[**services**]
 
-A service create an endpoint for your pod(s) 
+A service create an endpoint for your pod(s). As pods are mortal the service abstracts the logical set of pods an defines a policy to access them. 
 
-Four different types:
+.center[![Services explained](img/services-explained.svg)]
+
+---
+## Different types of services
 
 - .pink[ClusterIP]: Exposes the service on a cluster-internal IP. Makes it only reachable from within the cluster .small[(default)]
 
@@ -388,10 +393,10 @@ Get the url of the service
 http://192.168.99.100:31001
 
 ➜ curl http://192.168.99.100:31001
-Hello World!%     
+Hello World!
 ```
 
-**NOTE** This is the IP if the kubernetes cluster.
+**NOTE** This is the IP of the kubernetes cluster.
 ```bash
 ➜ minikube status
   host: Running
@@ -399,6 +404,34 @@ Hello World!%
   apiserver: Running
 * kubectl: Correctly Configured: pointing to minikube-vm at 192.168.99.100
 ```
+---
+## Using the expose command
+
+Another way to expose a pod as a service to make use of the `expose` command. 
+
+First remove our current service.
+
+```bash
+➜ kubectl delete -f hello-world/hello-world-service.yml 
+service "helloworld-service" deleted
+```
+
+Create a new service via the `expose` command
+```bash
+➜ kubectl expose pod nodehelloworld.example.com --type=NodePort --name=nodehelloworld-service
+service/nodehelloworld-service exposed
+```
+
+Check if it works
+```bash
+➜ minikube service nodehelloworld-service --url
+http://192.168.99.100:30377
+
+➜ curl http://192.168.99.100:30377
+Hello World!%   
+```
+
+**NOTE** This creates a service on the fly and won't be present after a respawn
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">
     </script>
